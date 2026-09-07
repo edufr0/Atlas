@@ -1,0 +1,155 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  OPERATOR
+  TECHNICIAN
+  SUPPORT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum CustomerStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+}
+
+enum CustomerAccountStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  SUSPENDED
+  CANCELLED
+  PENDING
+}
+
+model Tenant {
+  id        String       @id @default(uuid()) @db.Uuid
+  name      String
+  legalName String?
+  document  String?
+  email     String?
+  phone     String?
+  status    TenantStatus @default(ACTIVE)
+  settings  Json?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  users         User[]
+  customers     Customer[]
+  subscriptions Subscription[]
+  branding      Branding?
+
+  @@index([status])
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  tenantId     String     @db.Uuid
+  name         String
+  email        String
+  passwordHash String
+  role         UserRole   @default(OPERATOR)
+  status       UserStatus @default(ACTIVE)
+  lastLogin    DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([tenantId, status])
+}
+
+model Customer {
+  id        String         @id @default(uuid()) @db.Uuid
+  tenantId  String         @db.Uuid
+  name      String
+  document  String?
+  email     String?
+  phone     String?
+  address   Json?
+  status    CustomerStatus @default(ACTIVE)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  account       CustomerAccount?
+  subscriptions Subscription[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, document])
+}
+
+model CustomerAccount {
+  id           String                @id @default(uuid()) @db.Uuid
+  customerId   String                @unique @db.Uuid
+  email        String
+  passwordHash String
+  status       CustomerAccountStatus @default(ACTIVE)
+  lastLogin    DateTime?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id          String             @id @default(uuid()) @db.Uuid
+  tenantId    String             @db.Uuid
+  customerId  String             @db.Uuid
+  planId      String?
+  status      SubscriptionStatus @default(PENDING)
+  startDate   DateTime?
+  dueDate     DateTime?
+  gracePeriod Int?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([customerId])
+  @@index([tenantId, status])
+}
+
+model Branding {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @unique @db.Uuid
+  companyName    String?
+  logoUrl        String?
+  primaryColor   String?
+  secondaryColor String?
+  supportEmail   String?
+  supportPhone   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
