@@ -1,20 +1,19 @@
 import {
   IsEmail,
-  IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
 } from 'class-validator';
 
-export class CreateTenantDto {
+export class UpdateTenantDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  @MaxLength(150)
-  name!: string;
+  @MaxLength(255)
+  name?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(200)
+  @MaxLength(255)
   legalName?: string;
 
   @IsOptional()
@@ -24,7 +23,6 @@ export class CreateTenantDto {
 
   @IsOptional()
   @IsEmail()
-  @MaxLength(255)
   email?: string;
 
   @IsOptional()

@@ -1,34 +1,29 @@
 import {
   IsEmail,
   IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
-  MaxLength,
 } from 'class-validator';
 
-export class CreateTenantDto {
+export class CreateCustomerDto {
   @IsString()
   @IsNotEmpty()
-  @MaxLength(150)
-  name!: string;
+  name: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(200)
-  legalName?: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(30)
   document?: string;
 
   @IsOptional()
   @IsEmail()
-  @MaxLength(255)
   email?: string;
 
   @IsOptional()
   @IsString()
-  @MaxLength(30)
   phone?: string;
+
+  @IsOptional()
+  @IsObject()
+  address?: Record<string, unknown>;
 }
