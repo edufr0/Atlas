@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 
 import { prisma } from '@atlas/database';
-
 import * as bcrypt from 'bcrypt';
 
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
@@ -43,6 +42,20 @@ export class CustomerAccountsService {
       );
     }
 
+    const existingEmail =
+      await prisma.customerAccount.findFirst({
+        where: {
+          tenantId: user.tenantId,
+          email: data.email,
+        },
+      });
+
+    if (existingEmail) {
+      throw new ConflictException(
+        'This email is already being used by another customer account',
+      );
+    }
+
     const passwordHash = await bcrypt.hash(
       data.password,
       10,
@@ -50,12 +63,15 @@ export class CustomerAccountsService {
 
     return prisma.customerAccount.create({
       data: {
+        tenantId: user.tenantId,
         customerId,
         email: data.email,
         passwordHash,
       },
+
       select: {
         id: true,
+        tenantId: true,
         customerId: true,
         email: true,
         status: true,

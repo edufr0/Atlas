@@ -13,17 +13,16 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
 
     JwtModule.register({
-      secret:
-        process.env.JWT_SECRET ||
-        'atlas-development-secret-change-in-production',
-
+      secret: process.env.JWT_SECRET,
       signOptions: {
-        expiresIn: '1d',
+        expiresIn: '7d',
       },
     }),
   ],
 
-  controllers: [AuthController],
+  controllers: [
+    AuthController,
+  ],
 
   providers: [
     AuthService,
@@ -31,7 +30,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   ],
 
   exports: [
-    AuthService,
+    JwtModule,
     PassportModule,
   ],
 })

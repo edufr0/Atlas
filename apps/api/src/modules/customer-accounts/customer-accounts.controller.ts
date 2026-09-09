@@ -7,13 +7,13 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { UserAuthGuard } from '../../common/guards/user-auth.guard';
 import type { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 
 import { CustomerAccountsService } from './customer-accounts.service';
 import { CreateCustomerAccountDto } from './dto/create-customer-account.dto';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(UserAuthGuard)
 @Controller('customers/:customerId/account')
 export class CustomerAccountsController {
   constructor(

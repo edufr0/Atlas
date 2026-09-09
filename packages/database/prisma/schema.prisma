@@ -19,6 +19,7 @@ enum UserRole {
   OPERATOR
   TECHNICIAN
   SUPPORT
+  REPRESENTATIVE
 }
 
 enum UserStatus {
@@ -39,11 +40,24 @@ enum CustomerAccountStatus {
   BLOCKED
 }
 
-enum SubscriptionStatus {
+enum BillingCycle {
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  YEARLY
+}
+
+enum AtlasPlanStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum TenantSubscriptionStatus {
   ACTIVE
   SUSPENDED
   CANCELLED
   PENDING
+  EXPIRED
 }
 
 model Tenant {
@@ -58,10 +72,11 @@ model Tenant {
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 
-  users         User[]
-  customers     Customer[]
-  subscriptions Subscription[]
-  branding      Branding?
+  users              User[]
+  customers          Customer[]
+  tenantSubscription TenantSubscription?
+  branding           Branding[]
+  customerAccounts   CustomerAccount[]
 
   @@index([status])
 }
@@ -69,87 +84,151 @@ model Tenant {
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   tenantId     String     @db.Uuid
+
   name         String
   email        String
   passwordHash String
+
   role         UserRole   @default(OPERATOR)
   status       UserStatus @default(ACTIVE)
+
   lastLogin    DateTime?
+
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  representedCustomers Customer[] @relation("CustomerRepresentative")
+
   @@unique([tenantId, email])
+
   @@index([tenantId])
   @@index([tenantId, status])
+  @@index([tenantId, role])
 }
 
 model Customer {
-  id        String         @id @default(uuid()) @db.Uuid
-  tenantId  String         @db.Uuid
-  name      String
-  document  String?
-  email     String?
-  phone     String?
-  address   Json?
-  status    CustomerStatus @default(ACTIVE)
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
+  id               String         @id @default(uuid()) @db.Uuid
+  tenantId         String         @db.Uuid
+  representativeId String?        @db.Uuid
 
-  tenant        Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  account       CustomerAccount?
-  subscriptions Subscription[]
+  name             String
+  document         String?
+  email            String?
+  phone            String?
+
+  address          Json?
+
+  status           CustomerStatus @default(ACTIVE)
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  representative User? @relation("CustomerRepresentative", fields: [representativeId], references: [id], onDelete: SetNull)
+
+  account CustomerAccount?
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, document])
+  @@index([representativeId])
+  @@index([tenantId, representativeId])
 }
 
 model CustomerAccount {
   id           String                @id @default(uuid()) @db.Uuid
+
+  tenantId     String                @db.Uuid
   customerId   String                @unique @db.Uuid
+
   email        String
   passwordHash String
+
   status       CustomerAccountStatus @default(ACTIVE)
+
   lastLogin    DateTime?
+
   createdAt    DateTime              @default(now())
   updatedAt    DateTime              @updatedAt
 
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-}
-
-model Subscription {
-  id          String             @id @default(uuid()) @db.Uuid
-  tenantId    String             @db.Uuid
-  customerId  String             @db.Uuid
-  planId      String?
-  status      SubscriptionStatus @default(PENDING)
-  startDate   DateTime?
-  dueDate     DateTime?
-  gracePeriod Int?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
 
   @@index([tenantId])
-  @@index([customerId])
   @@index([tenantId, status])
+}
+
+model AtlasPlan {
+  id           String          @id @default(uuid()) @db.Uuid
+
+  name         String
+  description  String?
+
+  price        Decimal         @db.Decimal(10, 2)
+
+  billingCycle BillingCycle    @default(MONTHLY)
+
+  maxCustomers Int
+
+  status       AtlasPlanStatus @default(ACTIVE)
+
+  features     Json?
+
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  subscriptions TenantSubscription[]
+
+  @@index([status])
+}
+
+model TenantSubscription {
+  id          String                   @id @default(uuid()) @db.Uuid
+
+  tenantId    String                   @unique @db.Uuid
+  atlasPlanId String                   @db.Uuid
+
+  status      TenantSubscriptionStatus @default(PENDING)
+
+  startDate   DateTime?
+  dueDate     DateTime?
+
+  gracePeriod Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  atlasPlan AtlasPlan @relation(fields: [atlasPlanId], references: [id], onDelete: Restrict)
+
+  @@index([atlasPlanId])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model Branding {
   id             String   @id @default(uuid()) @db.Uuid
-  tenantId       String   @unique @db.Uuid
+
+  tenantId       String   @db.Uuid
+
   companyName    String?
   logoUrl        String?
+
   primaryColor   String?
   secondaryColor String?
+
   supportEmail   String?
   supportPhone   String?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
 }

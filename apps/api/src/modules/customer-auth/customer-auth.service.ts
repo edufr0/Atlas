@@ -28,11 +28,9 @@ export class CustomerAuthService {
       },
 
       include: {
-        customer: {
-          include: {
-            tenant: true,
-          },
-        },
+        tenant: true,
+
+        customer: true,
       },
     });
 
@@ -72,7 +70,7 @@ export class CustomerAuthService {
     }
 
     if (
-      account.customer.tenant.status !==
+      account.tenant.status !==
       TenantStatus.ACTIVE
     ) {
       throw new UnauthorizedException(
@@ -84,7 +82,7 @@ export class CustomerAuthService {
       sub: account.id,
       accountId: account.id,
       customerId: account.customerId,
-      tenantId: account.customer.tenantId,
+      tenantId: account.tenantId,
       email: account.email,
       type: 'CUSTOMER',
     };
@@ -112,8 +110,8 @@ export class CustomerAuthService {
       },
 
       tenant: {
-        id: account.customer.tenant.id,
-        name: account.customer.tenant.name,
+        id: account.tenant.id,
+        name: account.tenant.name,
       },
     };
   }

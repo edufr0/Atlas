@@ -1,7 +1,35 @@
-import { PartialType } from '@nestjs/mapped-types';
+import {
+  IsEmail,
+  IsEnum,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
-import { CreateCustomerDto } from './create-customer.dto';
+import { CustomerStatus } from '@atlas/database';
 
-export class UpdateCustomerDto extends PartialType(
-  CreateCustomerDto,
-) {}
+export class UpdateCustomerDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  document?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsObject()
+  address?: Record<string, unknown>;
+
+  @IsOptional()
+  @IsEnum(CustomerStatus)
+  status?: CustomerStatus;
+}

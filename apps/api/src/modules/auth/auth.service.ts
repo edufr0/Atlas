@@ -28,6 +28,7 @@ export class AuthService {
           email: data.email,
         },
       },
+
       include: {
         tenant: true,
       },
@@ -67,6 +68,7 @@ export class AuthService {
       tenantId: user.tenantId,
       email: user.email,
       role: user.role,
+      type: 'USER',
     };
 
     const accessToken =
@@ -76,6 +78,7 @@ export class AuthService {
       where: {
         id: user.id,
       },
+
       data: {
         lastLogin: new Date(),
       },
